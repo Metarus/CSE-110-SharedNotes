@@ -2,6 +2,8 @@ package edu.ucsd.cse110.sharednotes.model;
 
 import android.util.Log;
 
+import androidx.lifecycle.LiveData;
+
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -31,36 +33,39 @@ public class NoteAPI {
         return instance;
     }
 
-    public String getNote(String title) {
+    public Note getNote(String title) {
         title = title.replace(" ", "%20");
 
         var request = new Request.Builder()
-                .url("https://sharednotes.goto.ucsd.edu/echo/" + title)
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + title)
                 .method("GET", null)
                 .build();
 
         try (var response = client.newCall(request).execute()) {
             assert response.body() != null;
-            return response.body().string();
+            return Note.fromJSON(response.body().toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public String postNote(String title, String noteContent) throws IOException {
-
+    public void postNote(Note note) {
         final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
-        title = title.replace(" ", "%20");
+        String noteTitle = note.title.replace(" ", "%20");
 
-        var body = RequestBody.create(noteContent, JSON);
+        Gson gson = new Gson();
+        String noteJson = gson.toJson(note);
+        var body = RequestBody.create(noteJson, JSON);
         Request request = new Request.Builder()
-                .url("https://sharednotes.goto.ucsd.edu/echo/" + title)
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + noteTitle)
                 .post(body)
                 .build();
         try (var response = client.newCall(request).execute()) {
-            return response.body().string();
+            assert response.body() != null;
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
