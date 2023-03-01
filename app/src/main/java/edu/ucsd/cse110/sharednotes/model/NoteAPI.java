@@ -4,8 +4,12 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
+import java.io.IOException;
+
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 
 public class NoteAPI {
     // TODO: Implement the API using OkHttp!
@@ -25,6 +29,39 @@ public class NoteAPI {
             instance = new NoteAPI();
         }
         return instance;
+    }
+
+    public String getNote(String title) {
+        title = title.replace(" ", "%20");
+
+        var request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/echo/" + title)
+                .method("GET", null)
+                .build();
+
+        try (var response = client.newCall(request).execute()) {
+            assert response.body() != null;
+            return response.body().string();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String postNote(String title, String noteContent) throws IOException {
+
+        final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
+        title = title.replace(" ", "%20");
+
+        var body = RequestBody.create(noteContent, JSON);
+        Request request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/echo/" + title)
+                .post(body)
+                .build();
+        try (var response = client.newCall(request).execute()) {
+            return response.body().string();
+        }
     }
 
     /**
