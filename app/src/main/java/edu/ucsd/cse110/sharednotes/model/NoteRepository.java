@@ -113,6 +113,7 @@ public class NoteRepository {
 
     public void upsertRemote(Note note) {
         Log.d("UPSERT", "inserted");
+        note.updatedAt = Instant.now().getEpochSecond();
         api.postNote(note);
 //        // TODO: Implement upsertRemote!
 //        throw new UnsupportedOperationException("Not implemented yet");

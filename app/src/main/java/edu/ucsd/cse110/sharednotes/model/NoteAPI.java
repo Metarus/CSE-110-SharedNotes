@@ -8,9 +8,11 @@ import androidx.annotation.WorkerThread;
 
 import com.google.gson.Gson;
 
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -59,18 +61,22 @@ public class NoteAPI {
 
         String noteTitle = note.title.replace(" ", "%20");
 
-        Gson gson = new Gson();
-        String noteJson = gson.toJson(note);
-        var body = RequestBody.create(noteJson, JSON);
-        Request request = new Request.Builder()
-                .url("https://sharednotes.goto.ucsd.edu/notes/" + noteTitle)
-                .post(body)
-                .build();
-        try (var response = client.newCall(request).execute()) {
-            assert response.body() != null;
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
+        String noteJson = note.toJSON();
+        Log.i("POSTNOTE JSON", noteJson + " " +noteTitle);
+        Thread putThread = new Thread(() -> {
+            var body = RequestBody.create(noteJson, JSON);
+            Request request = new Request.Builder()
+                    .url("https://sharednotes.goto.ucsd.edu/notes/" + noteTitle)
+                    .put(body)
+                    .build();
+            try (var response = client.newCall(request).execute()) {
+                assert response.body() != null;
+                Log.i("POSTNOTE", response.body().toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        putThread.start();
     }
 
     /**
