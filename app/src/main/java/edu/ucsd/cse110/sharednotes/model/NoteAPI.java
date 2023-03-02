@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 
 public class NoteAPI {
     // TODO: Implement the API using OkHttp!
@@ -34,6 +35,42 @@ public class NoteAPI {
             instance = new NoteAPI();
         }
         return instance;
+    }
+
+    public Note getNote(String title) {
+        title = title.replace(" ", "%20");
+
+        var request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + title)
+                .method("GET", null)
+                .build();
+
+        try (var response = client.newCall(request).execute()) {
+            assert response.body() != null;
+            return Note.fromJSON(response.body().toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void postNote(Note note) {
+        final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
+        String noteTitle = note.title.replace(" ", "%20");
+
+        Gson gson = new Gson();
+        String noteJson = gson.toJson(note);
+        var body = RequestBody.create(noteJson, JSON);
+        Request request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + noteTitle)
+                .post(body)
+                .build();
+        try (var response = client.newCall(request).execute()) {
+            assert response.body() != null;
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**

@@ -23,6 +23,7 @@ public class NoteViewModel extends AndroidViewModel {
     }
 
     public LiveData<Note> getNote(String title) {
+
         // TODO: use getSynced here instead?
         // The returned live data should update whenever there is a change in
         // the database, or when the server returns a newer version of the note.
@@ -34,7 +35,7 @@ public class NoteViewModel extends AndroidViewModel {
     }
 
     public void save(Note note) {
-        // TODO: try to upload the note to the server.
-        repo.upsertLocal(note);
+//        repo.upsertSynced(note);
+        repo.upsertSynced(note);
     }
 }
