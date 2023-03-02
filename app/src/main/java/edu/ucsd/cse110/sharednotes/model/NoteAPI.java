@@ -9,8 +9,12 @@ import androidx.annotation.WorkerThread;
 import com.google.gson.Gson;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -39,21 +43,36 @@ public class NoteAPI {
         return instance;
     }
 
-    public Note getNote(String title) {
-        title = title.replace(" ", "%20");
+    public Note getNote(String title) throws ExecutionException, InterruptedException, TimeoutException {
+        String noteTitle = title.replace(" ", "%20");
+
+        Log.i("GET", noteTitle);
 
         var request = new Request.Builder()
-                .url("https://sharednotes.goto.ucsd.edu/notes/" + title)
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + noteTitle)
                 .method("GET", null)
                 .build();
 
-        try (var response = client.newCall(request).execute()) {
+        var executor = Executors.newSingleThreadExecutor();
+        Callable<Note> callable = () -> {
+            var response = client.newCall(request).execute();
             assert response.body() != null;
-            return Note.fromJSON(response.body().toString());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+            var body = response.body().string();
+            Log.i("GET NOTE", body);
+            return Note.fromJSON(body);
+        };
+//        try (var response = client.newCall(request).execute()) {
+//            assert response.body() != null;
+//            String noteJson = response.body().string();
+//            Log.i("GET", noteJson);
+//            return Note.fromJSON(noteJson);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+        Future<Note> future_get = executor.submit(callable);
+        Note note_get = future_get.get(1, TimeUnit.SECONDS);
+        return note_get;
+//        return null;
     }
 
     public void postNote(Note note) {
@@ -71,7 +90,7 @@ public class NoteAPI {
                     .build();
             try (var response = client.newCall(request).execute()) {
                 assert response.body() != null;
-                Log.i("POSTNOTE", response.body().toString());
+                Log.i("POSTNOTE", response.body().string());
             } catch (Exception e) {
                 e.printStackTrace();
             }

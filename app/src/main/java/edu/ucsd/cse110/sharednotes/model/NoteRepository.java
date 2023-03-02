@@ -9,10 +9,12 @@ import androidx.lifecycle.Observer;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class NoteRepository {
     private final NoteDao dao;
@@ -90,12 +92,26 @@ public class NoteRepository {
 
     public LiveData<Note> getRemote(String title) {
 
+        if(noteFuture!=null) {
+            noteFuture.cancel(true);
+        }
 
-        var note = new MutableLiveData<>(api.getNote(title));
+        var note = new MutableLiveData<Note>();
         var executor = Executors.newSingleThreadScheduledExecutor();
         noteFuture=executor.scheduleAtFixedRate(() -> {
-            note.postValue(api.getNote(title));
-            }, 0, 3000, TimeUnit.MILLISECONDS);
+            Note n;
+            try {
+                n = api.getNote(title);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+            note.postValue(n);
+            Log.i("NOTE RECEIVED", n.content);
+        }, 0, 3000, TimeUnit.MILLISECONDS);
         return note;
 //        // TODO: Implement getRemote!
 //        // TODO: Set up polling background thread (MutableLiveData?)
